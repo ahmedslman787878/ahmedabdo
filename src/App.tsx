@@ -3,301 +3,278 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Delete, Divide, Minus, Plus, X, Equal, RotateCcw, History } from 'lucide-react';
+import { 
+  Building2, 
+  Factory, 
+  MapPin, 
+  Maximize2, 
+  Phone, 
+  Search, 
+  Filter,
+  ArrowRight,
+  Info
+} from 'lucide-react';
 
-type Operation = '+' | '-' | '*' | '/' | null;
-
-interface HistoryItem {
-  expression: string;
-  result: string;
+interface Property {
+  id: number;
+  type: 'real-estate' | 'factory';
+  title: string;
+  location: string;
+  area: string;
+  price: string;
+  description: string;
+  image: string;
 }
 
+const MOCK_DATA: Property[] = [
+  {
+    id: 1,
+    type: 'real-estate',
+    title: 'فيلا سكنية فاخرة',
+    location: 'الرياض، حي النرجس',
+    area: '450 م²',
+    price: '3,500,000 ر.س',
+    description: 'فيلا بتصميم عصري تضم 5 غرف نوم ومسبح خاص.',
+    image: 'https://picsum.photos/seed/villa/800/600'
+  },
+  {
+    id: 2,
+    type: 'factory',
+    title: 'مصنع مواد غذائية',
+    location: 'المنطقة الصناعية الثالثة، جدة',
+    area: '2500 م²',
+    price: '12,000,000 ر.س',
+    description: 'مصنع مجهز بالكامل لإنتاج وتغليف المواد الغذائية مع مستودعات تبريد.',
+    image: 'https://picsum.photos/seed/factory1/800/600'
+  },
+  {
+    id: 3,
+    type: 'real-estate',
+    title: 'عمارة استثمارية',
+    location: 'الدمام، حي الشاطئ',
+    area: '600 م²',
+    price: '5,800,000 ر.س',
+    description: 'عمارة مكونة من 12 شقة سكنية مؤجرة بالكامل.',
+    image: 'https://picsum.photos/seed/building/800/600'
+  },
+  {
+    id: 4,
+    type: 'factory',
+    title: 'مستودع لوجستي',
+    location: 'مدينة الملك عبدالله الاقتصادية',
+    area: '5000 م²',
+    price: '8,500,000 ر.س',
+    description: 'مستودع تخزين جاف مع مكاتب إدارية وساحة تحميل.',
+    image: 'https://picsum.photos/seed/warehouse/800/600'
+  }
+];
+
 export default function App() {
-  const [display, setDisplay] = useState('0');
-  const [equation, setEquation] = useState('');
-  const [prevValue, setPrevValue] = useState<number | null>(null);
-  const [operation, setOperation] = useState<Operation>(null);
-  const [isNewNumber, setIsNewNumber] = useState(true);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'real-estate' | 'factory'>('all');
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleNumber = (num: string) => {
-    if (isNewNumber) {
-      setDisplay(num);
-      setIsNewNumber(false);
-    } else {
-      setDisplay(display === '0' ? num : display + num);
-    }
-  };
-
-  const handleDecimal = () => {
-    if (isNewNumber) {
-      setDisplay('0.');
-      setIsNewNumber(false);
-    } else if (!display.includes('.')) {
-      setDisplay(display + '.');
-    }
-  };
-
-  const calculate = (first: number, second: number, op: Operation): number => {
-    switch (op) {
-      case '+': return first + second;
-      case '-': return first - second;
-      case '*': return first * second;
-      case '/': return second !== 0 ? first / second : 0;
-      default: return second;
-    }
-  };
-
-  const handleOperation = (op: Operation) => {
-    const current = parseFloat(display);
-    
-    if (prevValue === null) {
-      setPrevValue(current);
-      setEquation(`${current} ${op}`);
-    } else if (operation) {
-      const result = calculate(prevValue, current, operation);
-      setPrevValue(result);
-      setEquation(`${result} ${op}`);
-      setDisplay(String(result));
-    }
-    
-    setOperation(op);
-    setIsNewNumber(true);
-  };
-
-  const handleEqual = () => {
-    if (prevValue === null || !operation) return;
-    
-    const current = parseFloat(display);
-    const result = calculate(prevValue, current, operation);
-    
-    const newHistoryItem = {
-      expression: `${prevValue} ${operation === '*' ? '×' : operation === '/' ? '÷' : operation} ${current}`,
-      result: String(result)
-    };
-    
-    setHistory([newHistoryItem, ...history].slice(0, 10));
-    setDisplay(String(result));
-    setEquation('');
-    setPrevValue(null);
-    setOperation(null);
-    setIsNewNumber(true);
-  };
-
-  const clear = () => {
-    setDisplay('0');
-    setEquation('');
-    setPrevValue(null);
-    setOperation(null);
-    setIsNewNumber(true);
-  };
-
-  const deleteLast = () => {
-    if (display.length > 1) {
-      setDisplay(display.slice(0, -1));
-    } else {
-      setDisplay('0');
-      setIsNewNumber(true);
-    }
-  };
-
-  const toggleSign = () => {
-    setDisplay(String(parseFloat(display) * -1));
-  };
-
-  const handlePercentage = () => {
-    setDisplay(String(parseFloat(display) / 100));
-  };
-
-  // Keyboard support
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (/[0-9]/.test(e.key)) handleNumber(e.key);
-      if (e.key === '.') handleDecimal();
-      if (e.key === '+') handleOperation('+');
-      if (e.key === '-') handleOperation('-');
-      if (e.key === '*') handleOperation('*');
-      if (e.key === '/') handleOperation('/');
-      if (e.key === 'Enter' || e.key === '=') handleEqual();
-      if (e.key === 'Escape') clear();
-      if (e.key === 'Backspace') deleteLast();
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [display, prevValue, operation, isNewNumber]);
+  const filteredData = MOCK_DATA.filter(item => {
+    const matchesFilter = filter === 'all' || item.type === filter;
+    const matchesSearch = item.title.includes(searchQuery) || item.location.includes(searchQuery);
+    return matchesFilter && matchesSearch;
+  });
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 font-sans" dir="rtl">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl shadow-zinc-200/50 overflow-hidden border border-zinc-100 flex flex-col"
-      >
-        {/* Header */}
-        <div className="p-6 flex justify-between items-center border-b border-zinc-50">
-          <h1 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">حاسبة ذكية</h1>
-          <button 
-            onClick={() => setShowHistory(!showHistory)}
-            className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-500"
-          >
-            <History size={20} />
+    <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 pb-20" dir="rtl">
+      {/* Header */}
+      <header className="bg-white border-b border-zinc-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="bg-indigo-600 p-2 rounded-lg">
+              <Building2 className="text-white" size={20} />
+            </div>
+            <h1 className="font-bold text-xl tracking-tight">عقارات ومصانع</h1>
+          </div>
+          <button className="p-2 text-zinc-500">
+            <Info size={20} />
           </button>
         </div>
+      </header>
 
-        {/* Display Area */}
-        <div className="p-8 flex flex-col items-end justify-end min-h-[160px] bg-zinc-50/30">
-          <AnimatePresence mode="wait">
-            <motion.div 
-              key={equation}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-zinc-400 text-lg font-mono mb-2 h-7"
-            >
-              {equation.replace('*', '×').replace('/', '÷')}
-            </motion.div>
-          </AnimatePresence>
+      {/* Search & Filter */}
+      <div className="p-4 space-y-4">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+          <input 
+            type="text"
+            placeholder="ابحث عن عقار أو مصنع..."
+            className="w-full bg-white border border-zinc-200 rounded-xl py-3 pr-10 pl-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <FilterButton 
+            active={filter === 'all'} 
+            onClick={() => setFilter('all')}
+            label="الكل"
+          />
+          <FilterButton 
+            active={filter === 'real-estate'} 
+            onClick={() => setFilter('real-estate')}
+            label="عقارات"
+            icon={<Building2 size={16} />}
+          />
+          <FilterButton 
+            active={filter === 'factory'} 
+            onClick={() => setFilter('factory')}
+            label="مصانع"
+            icon={<Factory size={16} />}
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 space-y-4">
+        {filteredData.map((item) => (
           <motion.div 
-            key={display}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-6xl font-light tracking-tighter text-zinc-900 font-mono overflow-hidden text-ellipsis w-full text-left"
-            dir="ltr"
+            key={item.id}
+            layoutId={`card-${item.id}`}
+            onClick={() => setSelectedProperty(item)}
+            className="bg-white rounded-2xl overflow-hidden border border-zinc-200 shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
           >
-            {display}
+            <div className="relative h-48">
+              <img 
+                src={item.image} 
+                alt={item.title}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm">
+                {item.type === 'real-estate' ? 'عقار' : 'مصنع'}
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-bold text-lg mb-1">{item.title}</h3>
+              <div className="flex items-center gap-1 text-zinc-500 text-sm mb-3">
+                <MapPin size={14} />
+                <span>{item.location}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-indigo-600 font-bold">{item.price}</span>
+                <div className="flex items-center gap-1 text-zinc-400 text-xs">
+                  <Maximize2 size={14} />
+                  <span>{item.area}</span>
+                </div>
+              </div>
+            </div>
           </motion.div>
-        </div>
+        ))}
+      </div>
 
-        {/* Keypad */}
-        <div className="p-6 grid grid-cols-4 gap-3 bg-white">
-          {/* Row 1 */}
-          <CalcButton onClick={clear} className="bg-zinc-100 text-zinc-600 hover:bg-zinc-200">
-            <RotateCcw size={20} />
-          </CalcButton>
-          <CalcButton onClick={toggleSign} className="bg-zinc-100 text-zinc-600 hover:bg-zinc-200">+/-</CalcButton>
-          <CalcButton onClick={handlePercentage} className="bg-zinc-100 text-zinc-600 hover:bg-zinc-200">%</CalcButton>
-          <CalcButton onClick={() => handleOperation('/')} className="bg-orange-50 text-orange-600 hover:bg-orange-100">
-            <Divide size={24} />
-          </CalcButton>
-
-          {/* Row 2 */}
-          <CalcButton onClick={() => handleNumber('7')}>7</CalcButton>
-          <CalcButton onClick={() => handleNumber('8')}>8</CalcButton>
-          <CalcButton onClick={() => handleNumber('9')}>9</CalcButton>
-          <CalcButton onClick={() => handleOperation('*')} className="bg-orange-50 text-orange-600 hover:bg-orange-100">
-            <X size={24} />
-          </CalcButton>
-
-          {/* Row 3 */}
-          <CalcButton onClick={() => handleNumber('4')}>4</CalcButton>
-          <CalcButton onClick={() => handleNumber('5')}>5</CalcButton>
-          <CalcButton onClick={() => handleNumber('6')}>6</CalcButton>
-          <CalcButton onClick={() => handleOperation('-')} className="bg-orange-50 text-orange-600 hover:bg-orange-100">
-            <Minus size={24} />
-          </CalcButton>
-
-          {/* Row 4 */}
-          <CalcButton onClick={() => handleNumber('1')}>1</CalcButton>
-          <CalcButton onClick={() => handleNumber('2')}>2</CalcButton>
-          <CalcButton onClick={() => handleNumber('3')}>3</CalcButton>
-          <CalcButton onClick={() => handleOperation('+')} className="bg-orange-50 text-orange-600 hover:bg-orange-100">
-            <Plus size={24} />
-          </CalcButton>
-
-          {/* Row 5 */}
-          <CalcButton onClick={() => handleNumber('0')} className="col-span-1">0</CalcButton>
-          <CalcButton onClick={handleDecimal}>.</CalcButton>
-          <CalcButton onClick={deleteLast} className="bg-zinc-50 text-zinc-400 hover:bg-zinc-100">
-            <Delete size={20} />
-          </CalcButton>
-          <CalcButton onClick={handleEqual} className="bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-200">
-            <Equal size={24} />
-          </CalcButton>
-        </div>
-
-        {/* History Overlay */}
-        <AnimatePresence>
-          {showHistory && (
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {selectedProperty && (
+          <>
             <motion.div 
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              className="absolute inset-0 bg-white z-10 flex flex-col"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProperty(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            <motion.div 
+              layoutId={`card-${selectedProperty.id}`}
+              className="fixed inset-x-4 bottom-4 top-20 bg-white rounded-3xl z-50 overflow-hidden flex flex-col"
             >
-              <div className="p-6 flex justify-between items-center border-b border-zinc-100">
-                <h2 className="text-lg font-semibold text-zinc-800">السجل</h2>
+              <div className="relative h-64 shrink-0">
+                <img 
+                  src={selectedProperty.image} 
+                  alt={selectedProperty.title}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
                 <button 
-                  onClick={() => setShowHistory(false)}
-                  className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+                  onClick={() => setSelectedProperty(null)}
+                  className="absolute top-4 left-4 bg-white/20 backdrop-blur-md text-white p-2 rounded-full"
                 >
-                  <X size={20} />
+                  <ArrowRight size={20} />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {history.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                    <History size={48} strokeWidth={1} />
-                    <p>لا يوجد عمليات سابقة</p>
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-1">{selectedProperty.title}</h2>
+                    <div className="flex items-center gap-1 text-zinc-500">
+                      <MapPin size={16} />
+                      <span>{selectedProperty.location}</span>
+                    </div>
                   </div>
-                ) : (
-                  history.map((item, i) => (
-                    <motion.div 
-                      key={i}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="text-left border-b border-zinc-50 pb-4"
-                      dir="ltr"
-                    >
-                      <div className="text-zinc-400 text-sm mb-1">{item.expression} =</div>
-                      <div className="text-zinc-800 text-xl font-mono">{item.result}</div>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-              {history.length > 0 && (
-                <div className="p-6 border-t border-zinc-100">
-                  <button 
-                    onClick={() => setHistory([])}
-                    className="w-full py-3 text-zinc-500 hover:text-red-500 transition-colors text-sm font-medium"
-                  >
-                    مسح السجل
-                  </button>
+                  <div className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl font-bold">
+                    {selectedProperty.price}
+                  </div>
                 </div>
-              )}
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-zinc-50 p-4 rounded-2xl">
+                    <span className="text-zinc-400 text-xs block mb-1">المساحة</span>
+                    <span className="font-bold">{selectedProperty.area}</span>
+                  </div>
+                  <div className="bg-zinc-50 p-4 rounded-2xl">
+                    <span className="text-zinc-400 text-xs block mb-1">النوع</span>
+                    <span className="font-bold">{selectedProperty.type === 'real-estate' ? 'عقار سكني' : 'منشأة صناعية'}</span>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h4 className="font-bold mb-2">الوصف</h4>
+                  <p className="text-zinc-600 leading-relaxed">
+                    {selectedProperty.description}
+                  </p>
+                </div>
+
+                <button className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
+                  <Phone size={20} />
+                  تواصل الآن
+                </button>
+              </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom Nav (Mobile Feel) */}
+      <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-zinc-200 px-6 py-3 flex justify-between items-center z-30">
+        <NavItem active icon={<Building2 size={24} />} label="الرئيسية" />
+        <NavItem icon={<Search size={24} />} label="البحث" />
+        <NavItem icon={<Factory size={24} />} label="المصانع" />
+        <NavItem icon={<Phone size={24} />} label="اتصل بنا" />
+      </nav>
     </div>
   );
 }
 
-function CalcButton({ 
-  children, 
-  onClick, 
-  className = "", 
-  colSpan = 1 
-}: { 
-  children: React.ReactNode; 
-  onClick: () => void; 
-  className?: string;
-  colSpan?: number;
-}) {
+function FilterButton({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon?: React.ReactNode }) {
   return (
-    <motion.button
-      whileTap={{ scale: 0.92 }}
+    <button 
       onClick={onClick}
       className={`
-        h-16 flex items-center justify-center rounded-2xl text-xl font-medium transition-all
-        ${className || "bg-zinc-50 text-zinc-800 hover:bg-zinc-100"}
-        ${colSpan > 1 ? `col-span-${colSpan}` : ""}
+        flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap
+        ${active 
+          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' 
+          : 'bg-white text-zinc-600 border border-zinc-200 hover:border-zinc-300'}
       `}
     >
-      {children}
-    </motion.button>
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+  return (
+    <button className={`flex flex-col items-center gap-1 ${active ? 'text-indigo-600' : 'text-zinc-400'}`}>
+      {icon}
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
   );
 }

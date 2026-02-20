@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:gap="http://phonegap.com/ns/1.0" id="com.realestate.factories" version="1.0.0">
+  <name>عقارات ومصانع</name>
+  <description>تطبيق لإدارة وعرض العقارات والمصانع.</description>
+  <author href="https://example.com" email="info@example.com">المطور</author>
+  <content src="index.html" />
+  <access origin="*" />
+  <allow-intent href="http://*/*" />
+  <allow-intent href="https://*/*" />
+  <allow-intent href="tel:*" />
+  <allow-intent href="sms:*" />
+  <allow-intent href="mailto:*" />
+  <allow-intent href="geo:*" />
+  <platform name="android">
+    <allow-intent href="market:*" />
+    <preference name="Fullscreen" value="false" />
+    <preference name="Orientation" value="portrait" />
+  </platform>
+  <preference name="DisallowOverscroll" value="true" />
+  <preference name="BackgroundColor" value="0xffffffff" />
+</widget>
